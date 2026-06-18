@@ -58,6 +58,9 @@ prisma/*.db-journal
 .next/
 .vercel/
 
+# Claude Code local config (may contain approved commands w/ secrets) — never commit
+.claude/
+
 # IDE / OS
 .vscode/*
 !.vscode/extensions.json
