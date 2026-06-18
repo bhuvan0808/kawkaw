@@ -1,0 +1,603 @@
+// Kaw Kaw — Prisma schema
+// PostgreSQL is the single source of truth.
+// Every model uses a UUID primary key and carries createdAt / updatedAt / deletedAt.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================================================
+// Enums
+// ===========================================================================
+
+enum UserRole {
+  CUSTOMER
+  RIDER
+  ADMIN
+  SUPER_ADMIN
+  SUPPORT
+}
+
+enum ServiceType {
+  GROCERY
+  PHARMACY
+  FOOD
+  PARCEL
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  ASSIGNED
+  ACCEPTED
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+}
+
+enum PaymentStatus {
+  PENDING
+  COLLECTED
+  FAILED
+  REFUNDED
+}
+
+enum RiderStatus {
+  OFFLINE
+  ONLINE
+  BUSY
+}
+
+enum PrescriptionStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum NotificationType {
+  ORDER_UPDATE
+  PROMOTION
+  SYSTEM
+  RIDER_ASSIGNMENT
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+// ===========================================================================
+// Identity & access
+// ===========================================================================
+
+model User {
+  id          String    @id @default(uuid()) @db.Uuid
+  phone       String    @unique
+  firebaseUid String?   @unique
+  name        String?
+  email       String?   @unique
+  role        UserRole  @default(CUSTOMER)
+  isActive    Boolean   @default(true)
+  fcmToken    String?
+  lastLoginAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  addresses       Address[]
+  orders          Order[]
+  parcelOrders    ParcelOrder[]
+  prescriptions   PrescriptionUpload[]      @relation("PrescriptionOwner")
+  notifications   Notification[]
+  refreshTokens   RefreshToken[]
+  rider           Rider?
+  admin           Admin?
+  auditLogs       AuditLog[]                @relation("AuditActor")
+  statusChanges   OrderStatusHistory[]      @relation("StatusChangedBy")
+  verifiedRx      PrescriptionUpload[]      @relation("PrescriptionVerifier")
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  jti           String    @unique
+  tokenHash     String
+  userAgent     String?
+  ipAddress     String?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  replacedByJti String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Admin {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  department  String?
+  permissions String[] @default([])
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admins")
+}
+
+// ===========================================================================
+// Customer profile data
+// ===========================================================================
+
+model Address {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @db.Uuid
+  type          AddressType @default(HOME)
+  label         String?
+  line1         String
+  line2         String?
+  landmark      String?
+  city          String      @default("Bhadrachalam")
+  state         String      @default("Telangana")
+  pincode       String
+  latitude      Float
+  longitude     Float
+  isDefault     Boolean     @default(false)
+  receiverName  String?
+  receiverPhone String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ===========================================================================
+// Catalogue
+// ===========================================================================
+
+model Category {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String      @unique
+  description String?
+  imageUrl    String?
+  serviceType ServiceType
+  sortOrder   Int         @default(0)
+  isActive    Boolean     @default(true)
+  parentId    String?     @db.Uuid
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([serviceType])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Product {
+  id                   String      @id @default(uuid()) @db.Uuid
+  name                 String
+  slug                 String      @unique
+  description          String?
+  imageUrl             String?
+  images               String[]    @default([])
+  categoryId           String      @db.Uuid
+  serviceType          ServiceType
+  sku                  String      @unique
+  price                Decimal     @db.Decimal(10, 2)
+  mrp                  Decimal     @db.Decimal(10, 2)
+  unit                 String      @default("1 unit")
+  isActive             Boolean     @default(true)
+  isFeatured           Boolean     @default(false)
+  requiresPrescription Boolean     @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  category   Category    @relation(fields: [categoryId], references: [id])
+  inventory  Inventory?
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([serviceType])
+  @@index([isFeatured])
+  @@map("products")
+}
+
+model Inventory {
+  id                String  @id @default(uuid()) @db.Uuid
+  productId         String  @unique @db.Uuid
+  quantity          Int     @default(0)
+  lowStockThreshold Int     @default(10)
+  isInStock         Boolean @default(true)
+  warehouseLocation String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("inventory")
+}
+
+// ===========================================================================
+// Orders (grocery / pharmacy / food)
+// ===========================================================================
+
+model Order {
+  id                 String        @id @default(uuid()) @db.Uuid
+  orderNumber        String        @unique
+  userId             String        @db.Uuid
+  addressId          String        @db.Uuid
+  riderId            String?       @db.Uuid
+  couponId           String?       @db.Uuid
+  serviceType        ServiceType
+  status             OrderStatus   @default(PENDING)
+  paymentMethod      PaymentMethod @default(COD)
+  paymentStatus      PaymentStatus @default(PENDING)
+
+  subtotal    Decimal @db.Decimal(10, 2)
+  deliveryFee Decimal @default(0) @db.Decimal(10, 2)
+  discount    Decimal @default(0) @db.Decimal(10, 2)
+  tax         Decimal @default(0) @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  notes              String?
+  cancellationReason String?
+  deliveryLatitude   Float?
+  deliveryLongitude  Float?
+
+  placedAt         DateTime  @default(now())
+  assignedAt       DateTime?
+  acceptedAt       DateTime?
+  pickedUpAt       DateTime?
+  outForDeliveryAt DateTime?
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user          User                 @relation(fields: [userId], references: [id])
+  address       Address              @relation(fields: [addressId], references: [id])
+  rider         Rider?               @relation(fields: [riderId], references: [id])
+  coupon        Coupon?              @relation(fields: [couponId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  prescription  PrescriptionUpload?
+
+  @@index([userId])
+  @@index([riderId])
+  @@index([status])
+  @@index([serviceType])
+  @@index([placedAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(uuid()) @db.Uuid
+  orderId     String  @db.Uuid
+  productId   String  @db.Uuid
+  productName String
+  unitPrice   Decimal @db.Decimal(10, 2)
+  quantity    Int
+  total       Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid()) @db.Uuid
+  orderId     String      @db.Uuid
+  status      OrderStatus
+  note        String?
+  changedById String?     @db.Uuid
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User? @relation("StatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+// ===========================================================================
+// Riders
+// ===========================================================================
+
+model Rider {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @unique @db.Uuid
+  vehicleType     String?
+  vehicleNumber   String?
+  licenseNumber   String?
+  status          RiderStatus @default(OFFLINE)
+  isVerified      Boolean     @default(false)
+  currentLatitude Float?
+  currentLongitude Float?
+  lastLocationAt  DateTime?
+  rating          Float       @default(5)
+  totalDeliveries Int         @default(0)
+  totalEarnings   Decimal     @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  parcelOrders ParcelOrder[]
+  locations    RiderLocation[]
+
+  @@index([status])
+  @@map("riders")
+}
+
+model RiderLocation {
+  id         String   @id @default(uuid()) @db.Uuid
+  riderId    String   @db.Uuid
+  latitude   Float
+  longitude  Float
+  accuracy   Float?
+  heading    Float?
+  speed      Float?
+  recordedAt DateTime @default(now())
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  rider Rider @relation(fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@index([riderId])
+  @@index([recordedAt])
+  @@map("rider_locations")
+}
+
+// ===========================================================================
+// Parcels
+// ===========================================================================
+
+model ParcelOrder {
+  id            String        @id @default(uuid()) @db.Uuid
+  orderNumber   String        @unique
+  userId        String        @db.Uuid
+  riderId       String?       @db.Uuid
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Pickup
+  pickupContactName  String
+  pickupContactPhone String
+  pickupLine1        String
+  pickupLandmark     String?
+  pickupLatitude     Float
+  pickupLongitude    Float
+
+  // Drop
+  receiverName    String
+  receiverPhone   String
+  dropLine1       String
+  dropLandmark    String?
+  dropLatitude    Float
+  dropLongitude   Float
+
+  packageType  String?
+  weightKg     Float?
+  instructions String?
+  distanceKm   Float?
+  deliveryFee  Decimal @default(0) @db.Decimal(10, 2)
+  total        Decimal @db.Decimal(10, 2)
+
+  cancellationReason String?
+
+  placedAt         DateTime  @default(now())
+  assignedAt       DateTime?
+  acceptedAt       DateTime?
+  pickedUpAt       DateTime?
+  outForDeliveryAt DateTime?
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user  User   @relation(fields: [userId], references: [id])
+  rider Rider? @relation(fields: [riderId], references: [id])
+
+  @@index([userId])
+  @@index([riderId])
+  @@index([status])
+  @@map("parcel_orders")
+}
+
+// ===========================================================================
+// Pharmacy prescriptions
+// ===========================================================================
+
+model PrescriptionUpload {
+  id              String             @id @default(uuid()) @db.Uuid
+  userId          String             @db.Uuid
+  orderId         String?            @unique @db.Uuid
+  imageUrl        String
+  thumbnailUrl    String?
+  status          PrescriptionStatus @default(PENDING)
+  rejectionReason String?
+  notes           String?
+  fileSize        Int?
+  mimeType        String?
+  verifiedById    String?            @db.Uuid
+  verifiedAt      DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user       User   @relation("PrescriptionOwner", fields: [userId], references: [id])
+  order      Order? @relation(fields: [orderId], references: [id])
+  verifiedBy User?  @relation("PrescriptionVerifier", fields: [verifiedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("prescription_uploads")
+}
+
+// ===========================================================================
+// Notifications
+// ===========================================================================
+
+model Notification {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @db.Uuid
+  type         NotificationType
+  title        String
+  body         String
+  data         Json?
+  isRead       Boolean          @default(false)
+  readAt       DateTime?
+  sentViaFcm   Boolean          @default(false)
+  fcmMessageId String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ===========================================================================
+// Coupons
+// ===========================================================================
+
+model Coupon {
+  id            String       @id @default(uuid()) @db.Uuid
+  code          String       @unique
+  type          CouponType
+  value         Decimal      @db.Decimal(10, 2)
+  minOrderValue Decimal      @default(0) @db.Decimal(10, 2)
+  maxDiscount   Decimal?     @db.Decimal(10, 2)
+  usageLimit    Int?
+  usedCount     Int          @default(0)
+  perUserLimit  Int          @default(1)
+  serviceType   ServiceType?
+  validFrom     DateTime     @default(now())
+  validUntil    DateTime?
+  isActive      Boolean      @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  orders Order[]
+
+  @@map("coupons")
+}
+
+// ===========================================================================
+// Settings
+// ===========================================================================
+
+model Setting {
+  id          String  @id @default(uuid()) @db.Uuid
+  key         String  @unique
+  value       Json
+  description String?
+  category    String  @default("general")
+  isPublic    Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("settings")
+}
+
+// ===========================================================================
+// Audit
+// ===========================================================================
+
+model AuditLog {
+  id         String  @id @default(uuid()) @db.Uuid
+  actorId    String? @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

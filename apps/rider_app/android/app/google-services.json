@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "828032047988",
+    "project_id": "kawkaw08",
+    "storage_bucket": "kawkaw08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828032047988:android:40f33778f3d2e6477faa21",
+        "android_client_info": {
+          "package_name": "in.kawkaw.kawkaw_customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBBpoMinhARN-QJCkFlrB9WFmWa0ItuAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828032047988:android:78123bcf3e9551287faa21",
+        "android_client_info": {
+          "package_name": "in.kawkaw.kawkaw_rider"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBBpoMinhARN-QJCkFlrB9WFmWa0ItuAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+serviceAccount*.json
+firebase-service-account*.json
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage / test
+coverage/
+.nyc_output/
+test-results/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+**/build/
+*.iml
+*.ipr
+*.iws
+.idea/
+**/android/key.properties
+**/android/app/upload-keystore.jks
+**/*.keystore
+**/*.jks
+**/ios/Flutter/.last_build_id
+**/ios/Pods/
+
+# Next.js
+.next/
+.vercel/
+
+# IDE / OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-data/

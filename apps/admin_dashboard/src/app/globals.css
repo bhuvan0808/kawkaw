@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply h-full;
+  }
+  body {
+    @apply bg-surface-subtle text-ink antialiased;
+  }
+  * {
+    @apply border-surface-border;
+  }
+}
+
+@layer components {
+  /* Thin, unobtrusive scrollbars for data-dense panels. */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-surface-border;
+  }
+}

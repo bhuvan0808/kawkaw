@@ -1,0 +1,165 @@
+{
+  "info": {
+    "name": "Kaw Kaw API (v1)",
+    "_postman_id": "kawkaw-api-v1",
+    "description": "Kaw Kaw delivery platform REST API. Set {{baseUrl}} and run 'Auth → Firebase login' to populate {{accessToken}}/{{refreshToken}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        { "name": "Live", "request": { "method": "GET", "url": "{{baseUrl}}/health/live", "auth": { "type": "noauth" } } },
+        { "name": "Ready", "request": { "method": "GET", "url": "{{baseUrl}}/health/ready", "auth": { "type": "noauth" } } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Firebase login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.tokens) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.tokens.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.tokens.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"idToken\": \"<FIREBASE_ID_TOKEN>\",\n  \"name\": \"Test User\"\n}" },
+            "url": "{{baseUrl}}/auth/firebase"
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/refresh"
+          }
+        },
+        { "name": "Me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogue",
+      "item": [
+        { "name": "Categories (grocery)", "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/categories?serviceType=GROCERY" } },
+        { "name": "Products", "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/products?serviceType=GROCERY&page=1&pageSize=20" } },
+        { "name": "Featured products", "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/products/featured" } }
+      ]
+    },
+    {
+      "name": "Addresses",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/addresses" } },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"HOME\",\n  \"line1\": \"H.No 1-2-3, Main Road\",\n  \"pincode\": \"507111\",\n  \"latitude\": 17.6688,\n  \"longitude\": 80.8936,\n  \"isDefault\": true\n}" },
+            "url": "{{baseUrl}}/addresses"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Place order (COD)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"addressId\": \"<ADDRESS_UUID>\",\n  \"serviceType\": \"GROCERY\",\n  \"items\": [\n    { \"productId\": \"<PRODUCT_UUID>\", \"quantity\": 2 }\n  ],\n  \"notes\": \"Leave at the gate\"\n}" },
+            "url": "{{baseUrl}}/orders"
+          }
+        },
+        { "name": "My orders", "request": { "method": "GET", "url": "{{baseUrl}}/orders?page=1&pageSize=20" } },
+        { "name": "Order detail", "request": { "method": "GET", "url": "{{baseUrl}}/orders/<ORDER_UUID>" } },
+        {
+          "name": "Cancel order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Changed my mind\"\n}" },
+            "url": "{{baseUrl}}/orders/<ORDER_UUID>/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Parcels",
+      "item": [
+        {
+          "name": "Quote",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pickupContactName\": \"Ravi\",\n  \"pickupContactPhone\": \"+919999999999\",\n  \"pickupLine1\": \"Shop 5, Bus Stand Road\",\n  \"pickupLatitude\": 17.6688,\n  \"pickupLongitude\": 80.8936,\n  \"receiverName\": \"Sita\",\n  \"receiverPhone\": \"+918888888888\",\n  \"dropLine1\": \"Temple Street\",\n  \"dropLatitude\": 17.672,\n  \"dropLongitude\": 80.901\n}" },
+            "url": "{{baseUrl}}/parcels/quote"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rider",
+      "item": [
+        { "name": "Register as rider", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"vehicleType\": \"Bike\",\n  \"vehicleNumber\": \"TS01AB1234\"\n}" }, "url": "{{baseUrl}}/riders/register" } },
+        { "name": "My queue", "request": { "method": "GET", "url": "{{baseUrl}}/orders/rider/queue" } },
+        { "name": "Go online", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"ONLINE\"\n}" }, "url": "{{baseUrl}}/riders/me/status" } },
+        { "name": "Push location", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"latitude\": 17.6688,\n  \"longitude\": 80.8936\n}" }, "url": "{{baseUrl}}/riders/me/location" } }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        { "name": "Dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/admin/dashboard" } },
+        { "name": "Analytics (7d)", "request": { "method": "GET", "url": "{{baseUrl}}/admin/analytics?days=7" } },
+        { "name": "All orders", "request": { "method": "GET", "url": "{{baseUrl}}/orders/admin/all?page=1&pageSize=20" } },
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Tomato 1kg\",\n  \"categoryId\": \"<CATEGORY_UUID>\",\n  \"serviceType\": \"GROCERY\",\n  \"sku\": \"GRO-TOM-1KG\",\n  \"price\": 30,\n  \"mrp\": 35,\n  \"unit\": \"1 kg\",\n  \"initialStock\": 100\n}" },
+            "url": "{{baseUrl}}/products"
+          }
+        }
+      ]
+    }
+  ]
+}

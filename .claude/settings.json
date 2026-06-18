@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm --workspace @kawkaw/api run typecheck 2>&1)",
+      "PowerShell(npm run build --workspace @kawkaw/api 2>&1)",
+      "PowerShell(npm --workspace @kawkaw/api run lint:check 2>&1)",
+      "PowerShell(npm --workspace @kawkaw/api run lint 2>&1 | Select-Object -Last 3; Write-Output \"=== LINT CHECK ===\"; npm --workspace @kawkaw/api run lint:check 2>&1 | Select-Object -Last 4; Write-Output \"exit=$LASTEXITCODE\")",
+      "PowerShell(npm install --no-audit --no-fund 2>&1)",
+      "PowerShell(winget install -e --id Google.AndroidStudio --accept-source-agreements --accept-package-agreements --silent 2>&1 | Select-Object -Last 15; Write-Output \"WINGET_EXIT=$LASTEXITCODE\")",
+      "PowerShell(Get-ChildItem -Recurse -Filter \"page.tsx\" \"C:\\\\Users\\\\BodduBhuvan\\\\OneDrive - Centific Global Solutions, Inc\\\\Bhuvan\\\\kawkaw\\\\apps\\\\admin_dashboard\\\\src\\\\app\" | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\BodduBhuvan\\\\OneDrive - Centific Global Solutions, Inc\\\\Bhuvan\\\\kawkaw\\\\apps\\\\admin_dashboard\\\\src\\\\app\", \"\"\\) })",
+      "PowerShell(cd \"C:\\\\Users\\\\BodduBhuvan\\\\OneDrive - Centific Global Solutions, Inc\\\\Bhuvan\\\\kawkaw\\\\services\\\\api\"; $ok=$false; for \\($i=0; $i -lt 30; $i++\\) { if \\(Select-String -Path run.log -Pattern \"successfully started\" -Quiet\\) { $ok=$true; break }; Start-Sleep -Seconds 2 }; \"ready=$ok\"; node scripts/test-rider-helper.js admin-check)",
+      "PowerShell($ok=$false; for \\($i=0; $i -lt 20; $i++\\) { try { $r = Invoke-WebRequest -Uri \"http://localhost:3001/login\" -UseBasicParsing -TimeoutSec 3; if \\($r.StatusCode -eq 200\\) { $ok=$true; break } } catch {}; Start-Sleep -Seconds 2 }; if \\($ok\\) { $login = Invoke-WebRequest -Uri \"http://localhost:3001/login\" -UseBasicParsing; $root = Invoke-WebRequest -Uri \"http://localhost:3001/\" -UseBasicParsing; \"login: $\\($login.StatusCode\\), contains 'Kaw Kaw Admin': $\\($login.Content -match 'Kaw Kaw Admin'\\)\"; \"root: $\\($root.StatusCode\\)\"; \"orders: $\\(\\(Invoke-WebRequest -Uri 'http://localhost:3001/orders' -UseBasicParsing\\).StatusCode\\)\" } else { \"SERVER_NOT_READY\"; Get-Content \"C:\\\\Users\\\\BodduBhuvan\\\\OneDrive - Centific Global Solutions, Inc\\\\Bhuvan\\\\kawkaw\\\\apps\\\\admin_dashboard\\\\server.log\" -Tail 15 })"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\BodduBhuvan\\.claude\\projects\\c--Users-BodduBhuvan-OneDrive---Centific-Global-Solutions--Inc-Bhuvan-kawkaw\\memory"
+    ]
+  }
+}

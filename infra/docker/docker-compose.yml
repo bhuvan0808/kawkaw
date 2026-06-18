@@ -1,0 +1,73 @@
+# Kaw Kaw — local development stack.
+# Usage (from repo root):
+#   docker compose -f infra/docker/docker-compose.yml up -d postgres redis
+#   docker compose -f infra/docker/docker-compose.yml up --build api
+name: kawkaw
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kawkaw-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kawkaw
+      POSTGRES_PASSWORD: kawkaw
+      POSTGRES_DB: kawkaw
+    ports:
+      - '5432:5432'
+    volumes:
+      - kawkaw_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kawkaw -d kawkaw']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: kawkaw-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - kawkaw_redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: services/api/Dockerfile
+    container_name: kawkaw-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://kawkaw:kawkaw@postgres:5432/kawkaw?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me_0123456789_abcdef}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_me_0123456789_abc}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-kawkaw08}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      API_URL: ${API_URL:-http://localhost:3000}
+      ADMIN_URL: ${ADMIN_URL:-http://localhost:3001}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001}
+    ports:
+      - '3000:3000'
+    volumes:
+      - kawkaw_uploads:/app/services/api/uploads
+
+volumes:
+  kawkaw_pg:
+  kawkaw_redis:
+  kawkaw_uploads:

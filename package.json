@@ -1,0 +1,26 @@
+{
+  "name": "kawkaw",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kaw Kaw — multi-service hyperlocal delivery platform (KawKawTech Pvt Ltd)",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "services/*",
+    "packages/shared_types",
+    "apps/admin_dashboard"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "api:dev": "npm run start:dev --workspace services/api",
+    "api:build": "npm run build --workspace services/api",
+    "api:test": "npm run test --workspace services/api",
+    "api:lint": "npm run lint --workspace services/api",
+    "prisma:generate": "npm run prisma:generate --workspace services/api",
+    "prisma:migrate": "npm run prisma:migrate:dev --workspace services/api",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down"
+  }
+}

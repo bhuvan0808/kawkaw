@@ -1,0 +1,41 @@
+# Render Blueprint for the Kaw Kaw API (api.kawkaw.in)
+# PostgreSQL is hosted on Avion and Redis on Upstash, so only the web service
+# is defined here. Set the secret env vars in the Render dashboard.
+services:
+  - type: web
+    name: kawkaw-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: .
+    region: singapore
+    healthCheckPath: /api/v1/health/ready
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: API_GLOBAL_PREFIX
+        value: api
+      - key: API_URL
+        value: https://api.kawkaw.in
+      - key: ADMIN_URL
+        value: https://admin.kawkaw.in
+      - key: CORS_ORIGINS
+        value: https://admin.kawkaw.in
+      - key: FIREBASE_PROJECT_ID
+        value: kawkaw08
+      # --- secrets: set in the Render dashboard (sync:false) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
