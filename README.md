@@ -41,7 +41,7 @@ kawkaw/
 | 2 | Customer App (Flutter) | **Code complete ✅** (run `flutter analyze`/`test` locally) |
 | 3 | Rider App (Flutter) | **Validated ✅** — built + run on emulator: login/OTP, register, verify-gate, online/offline, **background GPS (screen-locked)**, assignment modal, full delivery lifecycle, earnings |
 | 4 | Admin Dashboard (Next.js) | **Build verified ✅** — 16 routes, all admin APIs 200; RBAC, orders/assign, catalog, users/riders, pharmacy, notifications, analytics, audit, settings |
-| 5 | Testing, Deployment, CI/CD, Play Store | **Deployed ✅** — API on Render, admin on Vercel, CI/CD, signed AABs; launch score 76/100 (see [audit](docs/deployment/production-readiness-audit.md)) |
+| 5 | Testing, Deployment, CI/CD, Play Store | **Deployed ✅** — API on Render, admin on Vercel, CI/CD, signed AABs, Sentry; launch score 77/100 (see [audit](docs/deployment/production-readiness-audit.md)) |
 
 ## Tech stack
 

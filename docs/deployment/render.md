@@ -12,12 +12,27 @@ automatically from the GitHub repo `bhuvan0808/kawkaw` (branch `main`).
 | Region | Singapore |
 | Plan | **free** (⚠️ hibernates after ~15 min idle → ~50s cold start) |
 | Health check | `/api/v1/health/live` (liveness — does not depend on Redis) |
-| Auto-deploy | on push to `main` |
+| Auto-deploy | ⚠️ **not active** — see caveat below |
 | Dashboard | https://dashboard.render.com/web/srv-d8pq2c28qa3s73c3htlg |
 
 > **Production recommendation:** upgrade to the **Starter** plan ($7/mo) to remove
 > hibernation/cold-starts. Starter requires a card on the Render account
 > (Billing → add card), then change the service's Instance Type to Starter.
+
+## ⚠️ Auto-deploy caveat (action needed)
+The service was created via the Render API pointing at the **public** repo URL,
+so Render has **no GitHub webhook** — pushes to `main` do **not** auto-deploy, and
+env-var changes via the API do **not** auto-redeploy. Until fixed, apply changes
+with a manual deploy:
+```bash
+curl -X POST https://api.render.com/v1/services/srv-d8pq2c28qa3s73c3htlg/deploys \
+  -H "Authorization: Bearer $RENDER_API_KEY" -H "Content-Type: application/json" \
+  -d '{"clearCache":"do_not_clear"}'
+```
+To enable true auto-deploy: in the Render dashboard, connect the **GitHub app** to
+`bhuvan0808/kawkaw` (Settings → Build & Deploy → connect repo), or add a **Deploy
+Hook** and call it from a GitHub Actions step. *(Vercel, by contrast, is
+GitHub-linked and auto-deploys on push.)*
 
 ## Why liveness (not readiness) for the health check
 `/health/ready` returns **503** if Postgres *or* Redis is briefly unreachable

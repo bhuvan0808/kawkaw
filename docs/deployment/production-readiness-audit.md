@@ -1,7 +1,7 @@
 # Production Readiness Audit — Kaw Kaw
 
 **Date:** 2026-06-18 · **Verdict:** Deployed & verified; **not yet publicly launchable**.
-**Launch score: 76 / 100.**
+**Launch score: 77 / 100.**
 
 The platform is fully deployed to production infrastructure and the technical
 foundation is verified live. The remaining 24 points are **go-live gates** —
@@ -20,9 +20,9 @@ release" checkpoint.
 | 6 | Auth & core flows | 10/12 | All 7 flows validated (Phases 2–4 + prod checks). Full prod-URL E2E + FCM-on-device pending. |
 | 7 | Legal/compliance | 5/10 | 5 solid drafts; need **counsel review + fill placeholders + host live + link**. |
 | 8 | Play Store submission | 5/8 | Listings/data-safety/permissions/assets-checklist drafted; need screenshots/feature-graphic + console setup + bg-location declaration & demo video. |
-| 9 | Monitoring | 3.5/5 | Structured logs + health checks live. Sentry optional/not wired; uptime monitor + alerts pending. |
+| 9 | Monitoring | 4.5/5 | Structured logs + health checks + **Sentry wired** (backend + admin). Uptime monitor + alerts pending. |
 | 10 | Operational data | 1.5/5 | No SUPER_ADMIN bootstrapped; no real catalog/settings/riders; custom domains not set. |
-| | **Total** | **76/100** | |
+| | **Total** | **77/100** | |
 
 ## What's LIVE & verified ✅
 - **API:** https://kawkaw-api.onrender.com — `/health/ready` → DB+Redis up, HTTPS, pino logs, 27 env vars (fresh prod JWT). Auto-deploys from `main`.
@@ -46,7 +46,8 @@ release" checkpoint.
 - Move production secrets fully into platform dashboards; the OneDrive-synced `services/api/.env` is dev-only (cloud-sync exposure).
 - Full E2E on production URLs with release builds (customer order → admin assign → rider deliver → COD); FCM push on a physical device.
 - Uptime monitor on `/health/ready`; deploy-failure alerts (Render/Vercel); Aiven/Upstash quota alerts.
-- (Optional) Sentry — DSN pending; integration documented in `monitoring.md`.
+- **Enable Render auto-deploy:** connect the Render GitHub app to the repo (or add a Deploy Hook + an Actions step). Currently Render does **not** auto-deploy on push (deployed via public-repo API) — changes need a manual deploy trigger. (Vercel auto-deploys correctly.)
+- ✅ Sentry wired (backend + admin); optionally add `sentry_flutter` to the apps (needs an AAB rebuild).
 - Branch protection on `main` requiring the 3 CI checks.
 - Reconcile the stale `in.kawkaw.customer` references in older docs (the app correctly uses `in.kawkaw.kawkaw_customer`).
 

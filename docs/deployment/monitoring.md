@@ -20,32 +20,30 @@ Use `/health/ready` for an external uptime monitor (e.g. UptimeRobot / BetterSta
 to alert on DB/Redis loss. On the free Render plan the service hibernates — a
 1–5 min uptime ping also keeps it warm (or upgrade to Starter).
 
-## 3. Sentry (optional — not yet wired)
-Sentry is optional in V1 and currently **not integrated** (no DSN provided).
-When you have a DSN:
+## 3. Sentry (WIRED ✅)
+Sentry error monitoring is integrated and deployed on the backend and admin
+(env-gated, so it's a no-op without a DSN).
 
-### Backend (NestJS)
-```bash
-npm i @sentry/node --workspace @kawkaw/api
-```
-- Initialize `Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV, tracesSampleRate: 0.1 })` at the top of `main.ts`.
-- Add a Nest exception filter (or `Sentry.setupExpressErrorHandler`) so the
-  existing `AllExceptionsFilter` also reports 5xx to Sentry.
-- Set `SENTRY_DSN` as a Render env var (secret).
+### Backend (NestJS) — done
+- `@sentry/node` initialised at the top of `main.ts` via `src/common/observability/sentry.ts`
+  (`initSentry()`), guarded by `SENTRY_DSN`.
+- `AllExceptionsFilter` calls `captureException()` for every **5xx** (with path/method/requestId).
+- `SENTRY_DSN` is set on Render (project `kawkaw08`'s DSN). Redeploy applied.
 
-### Admin (Next.js)
-```bash
-npx @sentry/wizard@latest -i nextjs   # in apps/admin_dashboard
-```
-- Add `NEXT_PUBLIC_SENTRY_DSN` to Vercel env; report errors from the
-  `ErrorBoundary.componentDidCatch`.
+### Admin (Next.js) — done
+- `@sentry/react` initialised in `Providers` via `src/lib/sentry.ts` (`initSentry()`),
+  guarded by `NEXT_PUBLIC_SENTRY_DSN` (enabled only in production builds).
+- `ErrorBoundary.componentDidCatch` reports via `captureError()`.
+- `NEXT_PUBLIC_SENTRY_DSN` set on Vercel.
 
-### Mobile (Flutter)
-- `sentry_flutter` in each app; init in `bootstrap.dart`; pass the DSN via
-  `--dart-define=SENTRY_DSN=...` at build time.
+### Mobile (Flutter) — optional follow-up
+- Add `sentry_flutter` to each app, init in `bootstrap.dart`, pass the DSN via
+  `--dart-define=SENTRY_DSN=...` at build time (requires rebuilding the AABs).
+  Firebase Crashlytics is an alternative already available via Firebase.
 
-Until then, Render logs + health checks + Firebase Crashlytics (if enabled on the
-apps) provide baseline observability.
+**Verify:** trigger any error (a 5xx on the API or a render fault in the admin) →
+it appears in the Sentry **Issues** dashboard (region `de`, project `4511585249919056`).
+Plus Render logs + health checks for baseline observability.
 
 ## 4. Recommended alerts
 - Uptime monitor on `/health/ready` (DB/Redis down).
