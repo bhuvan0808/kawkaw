@@ -55,4 +55,7 @@ export const envValidationSchema = Joi.object({
 
   DEFAULT_DELIVERY_FEE: Joi.number().default(20),
   LAUNCH_CITY: Joi.string().default('Bhadrachalam'),
+
+  // Optional error monitoring — disabled when blank/unset.
+  SENTRY_DSN: Joi.string().uri().allow('').optional(),
 });

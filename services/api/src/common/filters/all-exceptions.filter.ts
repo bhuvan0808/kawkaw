@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { captureException } from '../observability/sentry';
 
 interface StandardError {
   statusCode: number;
@@ -71,6 +72,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(`${request.method} ${request.url} → ${status}: ${message}`);
+      // Report server-side faults to Sentry (no-op when SENTRY_DSN is unset).
+      captureException(exception, { path: request.url, method: request.method, requestId: body.requestId });
     }
 
     response.status(status).json(body);

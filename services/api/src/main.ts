@@ -7,8 +7,12 @@ import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AppConfig } from './common/config/configuration';
+import { initSentry } from './common/observability/sentry';
 
 async function bootstrap(): Promise<void> {
+  // Initialise error monitoring before anything else (no-op without SENTRY_DSN).
+  initSentry();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 
