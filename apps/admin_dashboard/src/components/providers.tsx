@@ -1,11 +1,16 @@
 'use client';
 
 import { AuthProvider } from '@/lib/auth';
+import { initSentry } from '@/lib/sentry';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ToastProvider } from './ui/toast';
 
 export function Providers({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    initSentry();
+  }, []);
+
   const [client] = useState(
     () =>
       new QueryClient({

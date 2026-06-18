@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { captureError } from '@/lib/sentry';
 import { Button } from './ui/primitives';
 
 interface State {
@@ -17,8 +18,8 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Surfaced to the console; a real deployment would forward to Sentry/etc.
     console.error('Admin dashboard error boundary:', error, info);
+    captureError(error, { componentStack: info.componentStack });
   }
 
   render() {
